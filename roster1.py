@@ -636,6 +636,91 @@ async def roster_help(ctx):
     except:
         pass
 
+@bot.command(name='backup')
+@commands.has_permissions(administrator=True)
+async def backup_data(ctx):
+    """Save current data to a backup file you can download
+    Usage: !backup"""
+    
+    # Check if data file exists
+    if not os.path.exists('roster_data.json'):
+        await ctx.send("❌ No data file found to backup!")
+        await ctx.message.delete()
+        return
+    
+    # Create a timestamped backup filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_filename = f"roster_backup_{timestamp}.json"
+    
+    # Copy the data to backup file
+    with open('roster_data.json', 'r') as original:
+        data = original.read()
+    
+    with open(backup_filename, 'w') as backup:
+        backup.write(data)
+    
+    # Send the backup file to Discord
+    await ctx.send(f"📁 **Data Backup** - {timestamp}")
+    await ctx.send(file=discord.File(backup_filename))
+    
+    # Delete the local backup file
+    os.remove(backup_filename)
+    
+    await ctx.send("✅ Backup complete! The JSON file above contains all your rosters and war data.")
+    await asyncio.sleep(3)
+    await ctx.message.delete()
+
+@bot.command(name='restore')
+@commands.has_permissions(administrator=True)
+async def restore_data(ctx):
+    """Restore data from an uploaded backup JSON file
+    Usage: !restore (then attach your backup JSON file)"""
+    
+    # Check if a file was attached
+    if not ctx.message.attachments:
+        await ctx.send("❌ Please attach a backup JSON file with the command!")
+        await ctx.message.delete()
+        return
+    
+    attachment = ctx.message.attachments[0]
+    
+    # Check if it's a JSON file
+    if not attachment.filename.endswith('.json'):
+        await ctx.send("❌ Please attach a JSON file!")
+        await ctx.message.delete()
+        return
+    
+    # Download the backup file
+    backup_data = await attachment.read()
+    
+    # Validate it's valid JSON
+    try:
+        json.loads(backup_data)
+    except:
+        await ctx.send("❌ Invalid JSON file! Cannot restore.")
+        await ctx.message.delete()
+        return
+    
+    # Save the current data as a safety backup first
+    if os.path.exists('roster_data.json'):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safety_backup = f"safety_backup_{timestamp}.json"
+        with open('roster_data.json', 'r') as original:
+            with open(safety_backup, 'w') as backup:
+                backup.write(original.read())
+        await ctx.send(f"⚠️ Created safety backup: `{safety_backup}`")
+    
+    # Write the backup data
+    with open('roster_data.json', 'wb') as f:
+        f.write(backup_data)
+    
+    # Reload the data
+    load_data()
+    
+    await ctx.send(f"✅ Data restored from `{attachment.filename}`!")
+    await asyncio.sleep(3)
+    await ctx.message.delete()
+
 # Run the bot
 if __name__ == "__main__":
     TOKEN = os.environ.get('DISCORD_TOKEN')
