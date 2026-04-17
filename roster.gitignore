@@ -1,6 +1,0 @@
-roster_data.json
-__pycache__/
-*.pyc
-.DS_Store
-.env
-*.log
