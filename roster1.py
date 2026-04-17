@@ -723,6 +723,20 @@ async def restore_data(ctx):
 
 # Run the bot
 if __name__ == "__main__":
+    # Start HTTP server for Render
+    from aiohttp import web
+    import threading
+    
+    async def health_check(request):
+        return web.Response(text="OK")
+    
+    def run_web():
+        app = web.Application()
+        app.router.add_get('/', health_check)
+        web.run_app(app, host='0.0.0.0', port=10000)
+    
+    threading.Thread(target=run_web, daemon=True).start()
+    
     TOKEN = os.environ.get('DISCORD_TOKEN')
     
     if TOKEN == 'YOUR_BOT_TOKEN_HERE':
